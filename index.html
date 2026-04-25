@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soru</title>
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* prevents scrolling when button moves */
+            color: #333;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .photo {
+            width: 250px;
+            height: auto;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            object-fit: cover;
+        }
+
+        #result-image {
+            filter: grayscale(100%);
+            width: 300px;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 2.5rem;
+            text-shadow: 2px 4px 10px rgba(0,0,0,0.1);
+            color: #2c3e50;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            min-height: 80px; 
+            width: 100%;
+        }
+
+        button {
+            padding: 16px 48px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        #btn-yes {
+            background-color: #4CAF50;
+            color: white;
+            z-index: 5;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s ease;
+        }
+
+        #btn-yes:hover {
+            background-color: #45a049;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        #btn-no {
+            background-color: #f44336;
+            color: white;
+            position: relative;
+            z-index: 50;
+            transition: background-color 0.3s ease, left 0.3s ease-out, top 0.3s ease-out;
+        }
+
+        #btn-no:hover {
+            background-color: #d32f2f;
+        }
+
+        #result-container {
+            display: none;
+        }
+
+        .result-message {
+            font-size: 6rem;
+            font-weight: 800;
+            color: #2c3e50;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.2);
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            .result-message {
+                font-size: 3.5rem;
+            }
+            button {
+                padding: 12px 36px;
+                font-size: 1.2rem;
+            }
+            .photo {
+                width: 200px;
+            }
+            #result-image {
+                width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-container">
+        <!-- Fotoğraf burada gösterilecek -->
+        <img class="photo" src="foto.jpg" alt="Profil">
+        
+        <h1 id="question">Pervin Mal Mısın ?</h1>
+        <div class="buttons" id="buttons-container">
+            <button id="btn-yes">Evet</button>
+            <button id="btn-no">Hayır</button>
+        </div>
+    </div>
+
+    <div class="container" id="result-container">
+        <!-- Evet'e tıklandığında gri gösterilecek fotoğraf -->
+        <img class="photo" id="result-image" src="foto.jpg" alt="Profil Gri">
+        <div class="result-message" id="result-message">
+            Biliyordum 😎
+        </div>
+    </div>
+
+    <!-- Canvas Confetti Library for Celebration Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script>
+        const btnNo = document.getElementById('btn-no');
+        const btnYes = document.getElementById('btn-yes');
+        const mainContainer = document.getElementById('main-container');
+        const resultContainer = document.getElementById('result-container');
+
+        let yesScale = 1;
+
+        // Ensure "Yes" button uses transform-origin center
+        btnYes.style.transformOrigin = "center";
+
+        function runAway() {
+            // Increase the scale of the "Yes" button gracefully
+            yesScale += 0.3;
+            btnYes.style.transform = `scale(${yesScale})`;
+            
+            // Switch button position to fixed so it can dart around the screen
+            if (btnNo.style.position !== 'fixed') {
+                btnNo.style.position = 'fixed';
+            }
+
+            // Calculate safe boundaries so the button doesn't leave the screen
+            const padding = 20;
+            const buttonWidth = btnNo.offsetWidth;
+            const buttonHeight = btnNo.offsetHeight;
+            
+            const maxX = window.innerWidth - buttonWidth - padding;
+            const maxY = window.innerHeight - buttonHeight - padding;
+
+            const randomX = Math.max(padding, Math.floor(Math.random() * maxX));
+            const randomY = Math.max(padding, Math.floor(Math.random() * maxY));
+
+            btnNo.style.left = randomX + 'px';
+            btnNo.style.top = randomY + 'px';
+        }
+
+        // Mouse hover event for desktop
+        btnNo.addEventListener('mouseover', runAway);
+        
+        // Touch event for mobile (prevents clicking)
+        btnNo.addEventListener('touchstart', (e) => {
+            e.preventDefault(); 
+            runAway();
+        });
+
+        // Click fallback, just in case they manage to click it somehow
+        btnNo.addEventListener('click', (e) => {
+            e.preventDefault();
+            runAway();
+        });
+
+        // When "Yes" is clicked
+        btnYes.addEventListener('click', () => {
+            // Müzik çal
+            const backgroundMusic = new Audio('semicenk.mp3');
+            backgroundMusic.play().catch(err => console.log('Müzik başlatılamadı:', err));
+
+            // Hide main, show result container
+            mainContainer.style.display = 'none';
+            resultContainer.style.display = 'flex';
+
+            // Confetti animation
+            var duration = 3000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+              return Math.random() * (max - min) + min;
+            }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                var particleCount = 50 * (timeLeft / duration);
+                
+                // Fire from both sides
+                confetti(Object.assign({}, defaults, { 
+                    particleCount, 
+                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+                }));
+                confetti(Object.assign({}, defaults, { 
+                    particleCount, 
+                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+                }));
+            }, 250);
+        });
+    </script>
+</body>
+</html>
